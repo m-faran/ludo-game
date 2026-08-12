@@ -8,6 +8,7 @@ import Animated, {
   withRepeat,
   Easing
 } from 'react-native-reanimated';
+import Svg, { Path, Circle } from 'react-native-svg';
 import { COLORS, GLOBAL_PATH, HOME_PATHS, YARD_POSITIONS, BASE_OFFSETS, CELL_SIZE } from '../constants';
 
 const CELL_PCT = 100 / 15; // 6.666%
@@ -111,9 +112,18 @@ const Token = ({ piece, eligible, onPress, stackOffset }) => {
         activeOpacity={0.8}
         disabled={!eligible}
         onPress={() => onPress(piece.id)}
-        style={[styles.token, { backgroundColor: COLORS[piece.player] }]}
+        style={styles.tokenTouchable}
       >
-        <View style={styles.tokenInner} />
+        <Svg viewBox="0 0 24 24" style={styles.tokenSvg}>
+          <Path 
+            d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" 
+            fill="#FFFFFF" 
+            stroke="#1A1A1A" 
+            strokeWidth="1.5" 
+          />
+          <Circle cx="12" cy="9" r="4.5" fill={COLORS[piece.player]} />
+          <Circle cx="12" cy="9" r="4.5" fill="none" stroke="#1A1A1A" strokeWidth="1" />
+        </Svg>
       </TouchableOpacity>
     </Animated.View>
   );
@@ -180,25 +190,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 10,
   },
-  token: {
-    width: '60%',
-    height: '60%',
-    borderRadius: 999,
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.5,
-    shadowRadius: 3,
-    elevation: 5,
+  tokenTouchable: {
+    width: '100%',
+    height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
+    elevation: 8,
   },
-  tokenInner: {
-    width: '40%',
-    height: '40%',
-    borderRadius: 999,
-    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+  tokenSvg: {
+    width: '85%',
+    height: '85%',
   }
 });
 

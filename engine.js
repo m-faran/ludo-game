@@ -1,4 +1,4 @@
-const PLAYERS = ['RED', 'GREEN', 'YELLOW', 'BLUE'];
+const PLAYERS = ['YELLOW', 'BLUE', 'RED', 'GREEN'];
 const BASE_OFFSETS = { RED: 0, GREEN: 13, YELLOW: 26, BLUE: 39 };
 const SAFE_TILES = new Set([0, 8, 13, 21, 26, 34, 39, 47]);
 

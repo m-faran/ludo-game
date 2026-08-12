@@ -31,10 +31,11 @@ const DiceFace = ({ value, color }) => {
   );
 };
 
-const Dice = ({ value, activePlayer, onRoll, disabled }) => {
+const Dice = ({ value, isActive, onRoll, disabled }) => {
   const rotation = useSharedValue(0);
   const scale = useSharedValue(1);
-  const [displayValue, setDisplayValue] = useState(value || 6);
+  const pointerOffset = useSharedValue(0);
+  const [displayValue, setDisplayValue] = useState(value || 1);
 
   useEffect(() => {
     if (value !== null) {
@@ -42,10 +43,24 @@ const Dice = ({ value, activePlayer, onRoll, disabled }) => {
     }
   }, [value]);
 
+  useEffect(() => {
+    if (isActive && !disabled) {
+      pointerOffset.value = withRepeat(
+        withSequence(
+          withTiming(10, { duration: 400 }),
+          withTiming(0, { duration: 400 })
+        ),
+        -1,
+        true
+      );
+    } else {
+      pointerOffset.value = 0;
+    }
+  }, [isActive, disabled]);
+
   const handlePress = () => {
-    if (disabled) return;
+    if (disabled || !isActive) return;
     
-    // Animate roll
     rotation.value = withSequence(
       withTiming(360, { duration: 400, easing: Easing.linear }),
       withTiming(720, { duration: 400, easing: Easing.out(Easing.ease) })
@@ -55,35 +70,43 @@ const Dice = ({ value, activePlayer, onRoll, disabled }) => {
       withTiming(1, { duration: 400 })
     );
 
-    // After animation, trigger onRoll
     setTimeout(() => {
       rotation.value = 0;
       onRoll();
     }, 800);
   };
 
-  const animatedStyle = useAnimatedStyle(() => {
+  const animatedDiceStyle = useAnimatedStyle(() => {
     return {
       transform: [
         { rotate: `${rotation.value}deg` },
         { scale: scale.value }
-      ]
+      ],
+      opacity: isActive ? 1 : 0.6,
+    };
+  });
+
+  const animatedPointerStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ translateX: pointerOffset.value }],
+      opacity: isActive && !disabled ? 1 : 0,
     };
   });
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.playerText, { color: COLORS[activePlayer] }]}>
-        {activePlayer}'s Turn
-      </Text>
-      
-      <Animated.View style={animatedStyle}>
+      {/* Orange pointer arrow (left of dice) */}
+      <Animated.View style={[styles.pointer, animatedPointerStyle]}>
+        <View style={styles.arrowRight} />
+      </Animated.View>
+
+      <Animated.View style={animatedDiceStyle}>
         <TouchableOpacity 
           activeOpacity={0.8} 
           onPress={handlePress}
-          disabled={disabled}
+          disabled={disabled || !isActive}
         >
-          <DiceFace value={displayValue} color={COLORS[activePlayer]} />
+          <DiceFace value={displayValue} color="#A1887F" />
         </TouchableOpacity>
       </Animated.View>
     </View>
@@ -92,21 +115,34 @@ const Dice = ({ value, activePlayer, onRoll, disabled }) => {
 
 const styles = StyleSheet.create({
   container: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 20,
+    padding: 10,
   },
-  playerText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 10,
+  pointer: {
+    marginRight: 10,
+  },
+  arrowRight: {
+    width: 0,
+    height: 0,
+    backgroundColor: 'transparent',
+    borderStyle: 'solid',
+    borderLeftWidth: 15,
+    borderRightWidth: 0,
+    borderBottomWidth: 10,
+    borderTopWidth: 10,
+    borderLeftColor: '#FF9800', // Orange pointer
+    borderRightColor: 'transparent',
+    borderBottomColor: 'transparent',
+    borderTopColor: 'transparent',
   },
   diceFace: {
     width: 60,
     height: 60,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 4,
-    borderRadius: 12,
+    backgroundColor: '#FFE4E1', // Pinkish beige
+    borderWidth: 3,
+    borderRadius: 14,
     position: 'relative',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },

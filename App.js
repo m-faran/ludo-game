@@ -66,21 +66,48 @@ export default function App() {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.boardContainer}>
-        <LudoBoard />
-        <Tokens 
-          pieces={gameState.pieces} 
-          eligiblePieces={eligiblePieces}
-          onPiecePress={handlePiecePress} 
-        />
-      </View>
+      <View style={styles.gameArea}>
+        {/* Top Row Dice */}
+        <View style={styles.diceRow}>
+          <Dice 
+            value={gameState.diceValue}
+            isActive={gameState.activePlayer === 'YELLOW'}
+            onRoll={handleRollDice}
+            disabled={gameState.turnPhase !== 'WAITING_FOR_ROLL' || gameState.gameOver || gameState.activePlayer !== 'YELLOW'}
+          />
+          <Dice 
+            value={gameState.diceValue}
+            isActive={gameState.activePlayer === 'BLUE'}
+            onRoll={handleRollDice}
+            disabled={gameState.turnPhase !== 'WAITING_FOR_ROLL' || gameState.gameOver || gameState.activePlayer !== 'BLUE'}
+          />
+        </View>
 
-      <Dice 
-        value={gameState.diceValue} 
-        activePlayer={gameState.activePlayer}
-        onRoll={handleRollDice}
-        disabled={gameState.turnPhase !== 'WAITING_FOR_ROLL' || gameState.gameOver}
-      />
+        <View style={styles.boardContainer}>
+          <LudoBoard />
+          <Tokens 
+            pieces={gameState.pieces} 
+            eligiblePieces={eligiblePieces}
+            onPiecePress={handlePiecePress} 
+          />
+        </View>
+
+        {/* Bottom Row Dice */}
+        <View style={styles.diceRow}>
+          <Dice 
+            value={gameState.diceValue}
+            isActive={gameState.activePlayer === 'GREEN'}
+            onRoll={handleRollDice}
+            disabled={gameState.turnPhase !== 'WAITING_FOR_ROLL' || gameState.gameOver || gameState.activePlayer !== 'GREEN'}
+          />
+          <Dice 
+            value={gameState.diceValue}
+            isActive={gameState.activePlayer === 'RED'}
+            onRoll={handleRollDice}
+            disabled={gameState.turnPhase !== 'WAITING_FOR_ROLL' || gameState.gameOver || gameState.activePlayer !== 'RED'}
+          />
+        </View>
+      </View>
 
       <WinnerModal 
         visible={gameState.gameOver} 
@@ -131,9 +158,21 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#424242',
   },
+  gameArea: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+  },
+  diceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    marginVertical: 10,
+  },
   boardContainer: {
-    width: width,
-    height: width, // 1:1 aspect ratio
+    width: width - 20,
+    height: width - 20, // 1:1 aspect ratio with padding
+    alignSelf: 'center',
     position: 'relative',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
