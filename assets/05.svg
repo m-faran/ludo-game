@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 18.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
+<svg version="1.1" baseProfile="tiny" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+	 x="0px" y="0px" viewBox="0 0 3600 3500" xml:space="preserve">
+<g>
+	<g>
+		<path d="M2461.7,2939.6H1138.3c-291.1,0-527.9-236.8-527.9-527.9V1088.3c0-291.1,236.8-527.9,527.9-527.9h1323.5
+			c291.1,0,527.9,236.8,527.9,527.9v1323.5C2989.6,2702.8,2752.8,2939.6,2461.7,2939.6z M1138.3,703.7
+			c-212.1,0-384.6,172.5-384.6,384.6v1323.5c0,212.1,172.5,384.6,384.6,384.6h1323.5c212.1,0,384.6-172.5,384.6-384.6V1088.3
+			c0-212.1-172.5-384.6-384.6-384.6H1138.3z"/>
+	</g>
+	<g>
+		<circle cx="1800" cy="1750" r="193.5"/>
+		<circle cx="1255.4" cy="1133.7" r="193.5"/>
+		<circle cx="2381.3" cy="1133.7" r="193.5"/>
+		<circle cx="1255.4" cy="2373.4" r="193.5"/>
+		<circle cx="2381.3" cy="2373.4" r="193.5"/>
+	</g>
+</g>
+</svg>
