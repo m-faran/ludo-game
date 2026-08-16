@@ -1,14 +1,14 @@
-const PLAYERS = ['YELLOW', 'BLUE', 'RED', 'GREEN'];
+const PLAYERS = ['RED', 'GREEN', 'YELLOW', 'BLUE'];
 const BASE_OFFSETS = { RED: 0, GREEN: 13, YELLOW: 26, BLUE: 39 };
 const SAFE_TILES = new Set([0, 8, 13, 21, 26, 34, 39, 47]);
 
-function createGame(numPlayers = 4) {
+function createGame(numPlayers = 4, bots = []) {
   const activePlayers = PLAYERS.slice(0, Math.max(2, Math.min(4, numPlayers)));
   const pieces = [];
   const players = {};
 
   activePlayers.forEach(player => {
-    players[player] = { status: 'PLAYING', rank: null, completedPieces: 0 };
+    players[player] = { status: 'PLAYING', rank: null, completedPieces: 0, isBot: bots.includes(player) };
     for (let i = 0; i < 4; i++) {
       pieces.push({ id: `${player}_${i}`, player, relativePosition: -1 });
     }

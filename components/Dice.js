@@ -10,23 +10,27 @@ import Animated, {
 } from 'react-native-reanimated';
 import { COLORS } from '../constants';
 
-const DiceFace = ({ value, color }) => {
-  // Simple rendering of dots based on value 1-6
-  const getDots = () => {
-    switch (value) {
-      case 1: return <View style={styles.dotCenter} />;
-      case 2: return <><View style={styles.dotTopLeft} /><View style={styles.dotBottomRight} /></>;
-      case 3: return <><View style={styles.dotTopLeft} /><View style={styles.dotCenter} /><View style={styles.dotBottomRight} /></>;
-      case 4: return <><View style={styles.dotTopLeft} /><View style={styles.dotTopRight} /><View style={styles.dotBottomLeft} /><View style={styles.dotBottomRight} /></>;
-      case 5: return <><View style={styles.dotTopLeft} /><View style={styles.dotTopRight} /><View style={styles.dotCenter} /><View style={styles.dotBottomLeft} /><View style={styles.dotBottomRight} /></>;
-      case 6: return <><View style={styles.dotTopLeft} /><View style={styles.dotTopRight} /><View style={styles.dotMiddleLeft} /><View style={styles.dotMiddleRight} /><View style={styles.dotBottomLeft} /><View style={styles.dotBottomRight} /></>;
-      default: return null;
-    }
-  };
+import Dice1 from '../assets/01.svg';
+import Dice2 from '../assets/02.svg';
+import Dice3 from '../assets/03.svg';
+import Dice4 from '../assets/04.svg';
+import Dice5 from '../assets/05.svg';
+import Dice6 from '../assets/06.svg';
 
+const DiceFaces = {
+  1: Dice1,
+  2: Dice2,
+  3: Dice3,
+  4: Dice4,
+  5: Dice5,
+  6: Dice6,
+};
+
+const DiceFace = ({ value }) => {
+  const Face = DiceFaces[value] || Dice1;
   return (
-    <View style={[styles.diceFace, { borderColor: color }]}>
-      {getDots()}
+    <View style={styles.diceFace}>
+      <Face width="100%" height="100%" />
     </View>
   );
 };
@@ -106,7 +110,7 @@ const Dice = ({ value, isActive, onRoll, disabled }) => {
           onPress={handlePress}
           disabled={disabled || !isActive}
         >
-          <DiceFace value={displayValue} color="#A1887F" />
+          <DiceFace value={displayValue} />
         </TouchableOpacity>
       </Animated.View>
     </View>
@@ -140,9 +144,6 @@ const styles = StyleSheet.create({
   diceFace: {
     width: 60,
     height: 60,
-    backgroundColor: '#FFE4E1', // Pinkish beige
-    borderWidth: 3,
-    borderRadius: 14,
     position: 'relative',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -150,20 +151,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 8,
   },
-  dot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#212121',
-    position: 'absolute',
-  },
-  dotCenter: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#212121', position: 'absolute', top: 20, left: 20 },
-  dotTopLeft: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#212121', position: 'absolute', top: 8, left: 8 },
-  dotTopRight: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#212121', position: 'absolute', top: 8, right: 8 },
-  dotBottomLeft: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#212121', position: 'absolute', bottom: 8, left: 8 },
-  dotBottomRight: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#212121', position: 'absolute', bottom: 8, right: 8 },
-  dotMiddleLeft: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#212121', position: 'absolute', top: 20, left: 8 },
-  dotMiddleRight: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#212121', position: 'absolute', top: 20, right: 8 },
 });
 
 export default Dice;

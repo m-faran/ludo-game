@@ -33,7 +33,7 @@ export const WinnerModal = ({ visible, ranks, onNewGame }) => {
   );
 };
 
-export const MenuModal = ({ visible, onResume, onNewGame }) => {
+export const MenuModal = ({ visible, onResume, onNewGame, onExitToHome }) => {
   if (!visible) return null;
 
   return (
@@ -48,6 +48,10 @@ export const MenuModal = ({ visible, onResume, onNewGame }) => {
           
           <TouchableOpacity style={[styles.button, styles.newGameBtn]} onPress={onNewGame}>
             <Text style={[styles.buttonText, { color: '#E53935' }]}>New Game</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.button, styles.homeBtn]} onPress={onExitToHome}>
+            <Text style={[styles.buttonText, { color: COLORS.TEXT }]}>Exit to Home</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -121,6 +125,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     borderWidth: 2,
     borderColor: COLORS.RED,
+  },
+  homeBtn: {
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: '#757575',
   },
   buttonText: {
     color: '#FFFFFF',

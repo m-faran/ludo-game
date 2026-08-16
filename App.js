@@ -6,8 +6,13 @@ import LudoBoard from './components/LudoBoard';
 import Tokens from './components/Tokens';
 import Dice from './components/Dice';
 import { WinnerModal, MenuModal } from './components/Modals';
+import { Image } from 'react-native';
+import HomeScreenSvg from './assets/Home_Screen.svg';
+import { getBestBotMove } from './botEngine';
 
 export default function App() {
+  const [appState, setAppState] = useState('SPLASH'); // 'SPLASH', 'HOME', 'GAME'
+  const [gameMode, setGameMode] = useState('PASS_N_PLAY'); // 'PASS_N_PLAY', 'VS_COMPUTER'
   const [gameState, setGameState] = useState(() => createGame(4));
   const [eligiblePieces, setEligiblePieces] = useState([]);
   const [isMenuVisible, setIsMenuVisible] = useState(false);
@@ -19,8 +24,9 @@ export default function App() {
       setEligiblePieces(moves.map(p => p.id));
       
       // Auto-move if only 1 legal move (per the engine implementation plan)
-      // We do it here in the UI layer.
-      if (moves.length === 1) {
+      // Only auto-move for human players here, bot logic handles its own moves
+      const isBot = gameState.players[gameState.activePlayer]?.isBot;
+      if (moves.length === 1 && !isBot) {
         setTimeout(() => {
           handlePiecePress(moves[0].id);
         }, 500); // Small delay for UX
@@ -29,6 +35,31 @@ export default function App() {
       setEligiblePieces([]);
     }
   }, [gameState]);
+
+  // Handle Bot Turns
+  useEffect(() => {
+    if (gameState.gameOver || appState !== 'GAME') return;
+
+    const activePlayerId = gameState.activePlayer;
+    const isBot = gameState.players[activePlayerId]?.isBot;
+
+    if (isBot) {
+      if (gameState.turnPhase === 'WAITING_FOR_ROLL') {
+        const timerId = setTimeout(() => {
+          handleRollDice();
+        }, 600);
+        return () => clearTimeout(timerId);
+      } else if (gameState.turnPhase === 'WAITING_FOR_MOVE') {
+        const bestMoveId = getBestBotMove(gameState);
+        if (bestMoveId) {
+          const timerId = setTimeout(() => {
+            handlePiecePress(bestMoveId);
+          }, 600);
+          return () => clearTimeout(timerId);
+        }
+      }
+    }
+  }, [gameState, appState]);
 
   const handleRollDice = () => {
     if (gameState.turnPhase !== 'WAITING_FOR_ROLL' || gameState.gameOver) return;
@@ -42,7 +73,11 @@ export default function App() {
   };
 
   const handlePiecePress = (pieceId) => {
-    if (gameState.turnPhase !== 'WAITING_FOR_MOVE' || !eligiblePieces.includes(pieceId)) return;
+    if (gameState.turnPhase !== 'WAITING_FOR_MOVE') return;
+    
+    // Check if the piece is actually a legal move right now
+    const legalMoves = getLegalMoves(gameState);
+    if (!legalMoves.some(p => p.id === pieceId)) return;
     
     const nextState = movePiece({ ...gameState }, pieceId);
     nextState.pieces = [...nextState.pieces.map(p => ({...p}))];
@@ -51,9 +86,83 @@ export default function App() {
   };
 
   const handleNewGame = () => {
-    setGameState(createGame(4));
+    if (gameMode === 'VS_COMPUTER') {
+      setGameState(createGame(4, ['GREEN', 'YELLOW', 'BLUE']));
+    } else {
+      setGameState(createGame(4));
+    }
     setIsMenuVisible(false);
   };
+
+  const handleExitToHome = () => {
+    setIsMenuVisible(false);
+    setAppState('HOME');
+  };
+
+  if (appState === 'SPLASH') {
+    return (
+      <TouchableOpacity 
+        style={styles.splashContainer} 
+        activeOpacity={1} 
+        onPress={() => setAppState('HOME')}
+      >
+        <StatusBar style="light" />
+        <Image 
+          source={require('./assets/Splash_Screen.png')} 
+          style={{ width: '100%', height: '100%' }} 
+          resizeMode="cover" 
+        />
+        <View style={styles.playNowOverlay}>
+          <Text style={styles.playNowText}>Tap anywhere to Play Now!</Text>
+        </View>
+      </TouchableOpacity>
+    );
+  }
+
+  if (appState === 'HOME') {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#07070E' }}>
+        <StatusBar style="light" />
+        <View style={StyleSheet.absoluteFill}>
+          <HomeScreenSvg width="100%" height="100%" preserveAspectRatio="xMidYMid slice" />
+        </View>
+        <SafeAreaView style={{ flex: 1 }}>
+          <View style={{ flex: 0.4 }} />
+          <View style={{ flex: 0.5, paddingHorizontal: 40 }}>
+            {/* Play Online Button */}
+            <TouchableOpacity 
+              style={{ flex: 1, marginBottom: 10 }} 
+              onPress={() => alert('Play Online - Coming Soon')} 
+            />
+            {/* Play vs Computer Button */}
+            <TouchableOpacity 
+              style={{ flex: 1, marginBottom: 10 }} 
+              onPress={() => {
+                setGameMode('VS_COMPUTER');
+                setGameState(createGame(4, ['GREEN', 'YELLOW', 'BLUE']));
+                setAppState('GAME');
+              }} 
+            />
+            {/* Pass N Play Button */}
+            <TouchableOpacity 
+              style={{ flex: 1, marginBottom: 10 }} 
+              onPress={() => {
+                setGameMode('PASS_N_PLAY');
+                setGameState(createGame(4));
+                setAppState('GAME');
+              }} 
+            />
+            {/* Play with Friends Button */}
+            <TouchableOpacity 
+              style={{ flex: 1, marginBottom: 10 }} 
+              onPress={() => alert('Play with Friends - Coming Soon')} 
+            />
+          </View>
+          <View style={{ flex: 0.1 }} />
+        </SafeAreaView>
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -71,15 +180,15 @@ export default function App() {
         <View style={styles.diceRow}>
           <Dice 
             value={gameState.diceValue}
-            isActive={gameState.activePlayer === 'YELLOW'}
+            isActive={gameState.activePlayer === 'RED'}
             onRoll={handleRollDice}
-            disabled={gameState.turnPhase !== 'WAITING_FOR_ROLL' || gameState.gameOver || gameState.activePlayer !== 'YELLOW'}
+            disabled={gameState.turnPhase !== 'WAITING_FOR_ROLL' || gameState.gameOver || gameState.activePlayer !== 'RED' || gameState.players['RED']?.isBot}
           />
           <Dice 
             value={gameState.diceValue}
-            isActive={gameState.activePlayer === 'BLUE'}
+            isActive={gameState.activePlayer === 'GREEN'}
             onRoll={handleRollDice}
-            disabled={gameState.turnPhase !== 'WAITING_FOR_ROLL' || gameState.gameOver || gameState.activePlayer !== 'BLUE'}
+            disabled={gameState.turnPhase !== 'WAITING_FOR_ROLL' || gameState.gameOver || gameState.activePlayer !== 'GREEN' || gameState.players['GREEN']?.isBot}
           />
         </View>
 
@@ -87,7 +196,9 @@ export default function App() {
           <LudoBoard />
           <Tokens 
             pieces={gameState.pieces} 
-            eligiblePieces={eligiblePieces}
+            eligiblePieces={
+              gameState.players[gameState.activePlayer]?.isBot ? [] : eligiblePieces
+            }
             onPiecePress={handlePiecePress} 
           />
         </View>
@@ -96,15 +207,15 @@ export default function App() {
         <View style={styles.diceRow}>
           <Dice 
             value={gameState.diceValue}
-            isActive={gameState.activePlayer === 'GREEN'}
+            isActive={gameState.activePlayer === 'BLUE'}
             onRoll={handleRollDice}
-            disabled={gameState.turnPhase !== 'WAITING_FOR_ROLL' || gameState.gameOver || gameState.activePlayer !== 'GREEN'}
+            disabled={gameState.turnPhase !== 'WAITING_FOR_ROLL' || gameState.gameOver || gameState.activePlayer !== 'BLUE' || gameState.players['BLUE']?.isBot}
           />
           <Dice 
             value={gameState.diceValue}
-            isActive={gameState.activePlayer === 'RED'}
+            isActive={gameState.activePlayer === 'YELLOW'}
             onRoll={handleRollDice}
-            disabled={gameState.turnPhase !== 'WAITING_FOR_ROLL' || gameState.gameOver || gameState.activePlayer !== 'RED'}
+            disabled={gameState.turnPhase !== 'WAITING_FOR_ROLL' || gameState.gameOver || gameState.activePlayer !== 'YELLOW' || gameState.players['YELLOW']?.isBot}
           />
         </View>
       </View>
@@ -123,6 +234,7 @@ export default function App() {
         visible={isMenuVisible}
         onResume={() => setIsMenuVisible(false)}
         onNewGame={handleNewGame}
+        onExitToHome={handleExitToHome}
       />
     </SafeAreaView>
   );
@@ -157,6 +269,28 @@ const styles = StyleSheet.create({
   menuBtnText: {
     fontWeight: 'bold',
     color: '#424242',
+  },
+  splashContainer: {
+    flex: 1,
+    backgroundColor: '#000000',
+    position: 'relative',
+  },
+  playNowOverlay: {
+    position: 'absolute',
+    bottom: 80,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    borderRadius: 30,
+    borderWidth: 2,
+    borderColor: '#FFD700',
+  },
+  playNowText: {
+    color: '#FFF',
+    fontSize: 20,
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
   },
   gameArea: {
     flex: 1,

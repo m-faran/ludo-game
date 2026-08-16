@@ -1,15 +1,23 @@
 import React, { useEffect, useRef } from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withTiming, 
-  withSequence, 
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withSequence,
   withRepeat,
   Easing
 } from 'react-native-reanimated';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { COLORS, GLOBAL_PATH, HOME_PATHS, YARD_POSITIONS, BASE_OFFSETS, CELL_SIZE } from '../constants';
+import PiecesSvg from '../assets/Pieces.svg';
+
+const PIECE_VIEWBOXES = {
+  RED: "10 135 600 600",
+  GREEN: "500 135 600 600",
+  YELLOW: "1000 135 600 600",
+  BLUE: "1572 135 600 600"
+};
 
 const CELL_PCT = 100 / 15; // 6.666%
 
@@ -32,7 +40,7 @@ const getTileCoords = (player, relativePosition, pieceIndex) => {
 const Token = ({ piece, eligible, onPress, stackOffset }) => {
   const pieceIndex = parseInt(piece.id.split('_')[1]);
   const currentCoords = getTileCoords(piece.player, piece.relativePosition, pieceIndex);
-  
+
   const left = useSharedValue(currentCoords.col * CELL_PCT);
   const top = useSharedValue(currentCoords.row * CELL_PCT);
   const scale = useSharedValue(1);
@@ -42,8 +50,8 @@ const Token = ({ piece, eligible, onPress, stackOffset }) => {
   useEffect(() => {
     if (eligible) {
       pulse.value = withRepeat(
-        withTiming(1.2, { duration: 500, easing: Easing.inOut(Easing.ease) }), 
-        -1, 
+        withTiming(1.2, { duration: 500, easing: Easing.inOut(Easing.ease) }),
+        -1,
         true
       );
     } else {
@@ -56,7 +64,7 @@ const Token = ({ piece, eligible, onPress, stackOffset }) => {
       // Need to animate
       const oldPos = prevPosition.current;
       const newPos = piece.relativePosition;
-      
+
       if (newPos === -1) {
         // Sent back to yard (captured)
         const target = getTileCoords(piece.player, -1, pieceIndex);
@@ -66,7 +74,7 @@ const Token = ({ piece, eligible, onPress, stackOffset }) => {
         // Sequential hopping
         let steps = [];
         let start = oldPos === -1 ? 0 : oldPos + 1;
-        
+
         for (let pos = start; pos <= newPos; pos++) {
           const coords = getTileCoords(piece.player, pos, pieceIndex);
           steps.push({
@@ -108,22 +116,20 @@ const Token = ({ piece, eligible, onPress, stackOffset }) => {
 
   return (
     <Animated.View style={[styles.tokenContainer, animatedStyle]}>
-      <TouchableOpacity 
+      <TouchableOpacity
         activeOpacity={0.8}
         disabled={!eligible}
         onPress={() => onPress(piece.id)}
         style={styles.tokenTouchable}
       >
-        <Svg viewBox="0 0 24 24" style={styles.tokenSvg}>
-          <Path 
-            d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" 
-            fill="#FFFFFF" 
-            stroke="#1A1A1A" 
-            strokeWidth="1.5" 
+        <View style={styles.tokenSvgWrapper}>
+          <PiecesSvg
+            width="100%"
+            height="100%"
+            viewBox={PIECE_VIEWBOXES[piece.player]}
+            preserveAspectRatio="xMidYMid meet"
           />
-          <Circle cx="12" cy="9" r="4.5" fill={COLORS[piece.player]} />
-          <Circle cx="12" cy="9" r="4.5" fill="none" stroke="#1A1A1A" strokeWidth="1" />
-        </Svg>
+        </View>
       </TouchableOpacity>
     </Animated.View>
   );
@@ -133,7 +139,7 @@ const Tokens = ({ pieces, eligiblePieces, onPiecePress }) => {
   // Calculate stacking
   // Group pieces by their exact col/row to apply micro offsets
   const tileGroups = {};
-  
+
   pieces.forEach(piece => {
     if (piece.relativePosition === -1 || piece.relativePosition === 56) return; // Don't stack in yard or home
     const pieceIndex = parseInt(piece.id.split('_')[1]);
@@ -147,14 +153,14 @@ const Tokens = ({ pieces, eligiblePieces, onPiecePress }) => {
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
       {pieces.map((piece) => {
         const isEligible = eligiblePieces.includes(piece.id);
-        
+
         let stackOffset = { dx: 0, dy: 0 };
         if (piece.relativePosition >= 0 && piece.relativePosition < 56) {
           const pieceIndex = parseInt(piece.id.split('_')[1]);
           const { col, row } = getTileCoords(piece.player, piece.relativePosition, pieceIndex);
           const key = `${col},${row}`;
           const group = tileGroups[key];
-          
+
           if (group && group.length > 1) {
             const index = group.indexOf(piece.id);
             // 2x2 grid offset
@@ -168,7 +174,7 @@ const Tokens = ({ pieces, eligiblePieces, onPiecePress }) => {
         }
 
         return (
-          <Token 
+          <Token
             key={piece.id}
             piece={piece}
             eligible={isEligible}
@@ -201,9 +207,9 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 8,
   },
-  tokenSvg: {
-    width: '85%',
-    height: '85%',
+  tokenSvgWrapper: {
+    width: '100%',
+    height: '100%',
   }
 });
 
