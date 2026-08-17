@@ -5,17 +5,81 @@ import { createGame, rollDice, getLegalMoves, movePiece } from './engine';
 import LudoBoard from './components/LudoBoard';
 import Tokens from './components/Tokens';
 import Dice from './components/Dice';
-import { WinnerModal, MenuModal } from './components/Modals';
 import { Image } from 'react-native';
-import HomeScreenSvg from './assets/Home_Screen.svg';
+import HomeScreen from './screens/homeScreen';
+import SettingsScreen from './screens/settingsScreen';
+import SplashScreen from './screens/splashScreen';
 import { getBestBotMove } from './botEngine';
+import * as WebBrowser from 'expo-web-browser';
+import * as AuthSession from 'expo-auth-session';
+import { supabase } from './supabase';
+import { multiplayer } from './multiplayer';
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function App() {
-  const [appState, setAppState] = useState('SPLASH'); // 'SPLASH', 'HOME', 'GAME'
-  const [gameMode, setGameMode] = useState('PASS_N_PLAY'); // 'PASS_N_PLAY', 'VS_COMPUTER'
+  const [appState, setAppState] = useState('SPLASH'); // 'SPLASH', 'HOME', 'GAME', 'SETTINGS'
+  const [gameMode, setGameMode] = useState('PASS_N_PLAY'); // 'PASS_N_PLAY', 'VS_COMPUTER', 'ONLINE'
   const [gameState, setGameState] = useState(() => createGame(4));
   const [eligiblePieces, setEligiblePieces] = useState([]);
   const [isMenuVisible, setIsMenuVisible] = useState(false);
+  
+  // Supabase Auth State
+  const [session, setSession] = useState(null);
+  const [username, setUsername] = useState('Guest');
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session?.user) fetchProfile(session.user.id);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      } else {
+        setUsername('Guest');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const fetchProfile = async (userId) => {
+    const { data } = await supabase.from('profiles').select('username').eq('id', userId).single();
+    if (data?.username) {
+      setUsername(data.username);
+    } else {
+      const defaultName = 'Player_' + Math.floor(Math.random() * 10000);
+      await supabase.from('profiles').upsert({ id: userId, username: defaultName });
+      setUsername(defaultName);
+    }
+    multiplayer.init(userId);
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      const redirectUrl = AuthSession.makeRedirectUri();
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: redirectUrl,
+          skipBrowserRedirect: true,
+        },
+      });
+      if (error) throw error;
+      if (data?.url) {
+        const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
+        if (result.type === 'success' && result.url) {
+          await supabase.auth.getSessionFromUrl({ url: result.url });
+        }
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Login Failed');
+    }
+  };
 
   // Update eligible pieces whenever state changes
   useEffect(() => {
@@ -100,67 +164,39 @@ export default function App() {
   };
 
   if (appState === 'SPLASH') {
-    return (
-      <TouchableOpacity 
-        style={styles.splashContainer} 
-        activeOpacity={1} 
-        onPress={() => setAppState('HOME')}
-      >
-        <StatusBar style="light" />
-        <Image 
-          source={require('./assets/Splash_Screen.png')} 
-          style={{ width: '100%', height: '100%' }} 
-          resizeMode="cover" 
-        />
-        <View style={styles.playNowOverlay}>
-          <Text style={styles.playNowText}>Tap anywhere to Play Now!</Text>
-        </View>
-      </TouchableOpacity>
-    );
+    return <SplashScreen onPlay={() => setAppState('HOME')} />;
   }
 
   if (appState === 'HOME') {
     return (
-      <View style={{ flex: 1, backgroundColor: '#07070E' }}>
-        <StatusBar style="light" />
-        <View style={StyleSheet.absoluteFill}>
-          <HomeScreenSvg width="100%" height="100%" preserveAspectRatio="xMidYMid slice" />
-        </View>
-        <SafeAreaView style={{ flex: 1 }}>
-          <View style={{ flex: 0.4 }} />
-          <View style={{ flex: 0.5, paddingHorizontal: 40 }}>
-            {/* Play Online Button */}
-            <TouchableOpacity 
-              style={{ flex: 1, marginBottom: 10 }} 
-              onPress={() => alert('Play Online - Coming Soon')} 
-            />
-            {/* Play vs Computer Button */}
-            <TouchableOpacity 
-              style={{ flex: 1, marginBottom: 10 }} 
-              onPress={() => {
-                setGameMode('VS_COMPUTER');
-                setGameState(createGame(4, ['GREEN', 'YELLOW', 'BLUE']));
-                setAppState('GAME');
-              }} 
-            />
-            {/* Pass N Play Button */}
-            <TouchableOpacity 
-              style={{ flex: 1, marginBottom: 10 }} 
-              onPress={() => {
-                setGameMode('PASS_N_PLAY');
-                setGameState(createGame(4));
-                setAppState('GAME');
-              }} 
-            />
-            {/* Play with Friends Button */}
-            <TouchableOpacity 
-              style={{ flex: 1, marginBottom: 10 }} 
-              onPress={() => alert('Play with Friends - Coming Soon')} 
-            />
-          </View>
-          <View style={{ flex: 0.1 }} />
-        </SafeAreaView>
-      </View>
+      <HomeScreen 
+        username={username}
+        onPlayOnline={() => alert('Play Online - Coming Soon')}
+        onPlayVsComputer={() => {
+          setGameMode('VS_COMPUTER');
+          setGameState(createGame(4, ['GREEN', 'YELLOW', 'BLUE']));
+          setAppState('GAME');
+        }}
+        onPassNPlay={() => {
+          setGameMode('PASS_N_PLAY');
+          setGameState(createGame(4));
+          setAppState('GAME');
+        }}
+        onPlayWithFriends={() => alert('Play with Friends - Coming Soon')}
+        onSettings={() => setAppState('SETTINGS')}
+      />
+    );
+  }
+
+  if (appState === 'SETTINGS') {
+    return (
+      <SettingsScreen 
+        username={username}
+        session={session}
+        onBack={() => setAppState('HOME')}
+        onLogin={handleGoogleLogin}
+        onLogout={() => supabase.auth.signOut()}
+      />
     );
   }
 
